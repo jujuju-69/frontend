@@ -11,27 +11,13 @@ import {
   FlatList,
   ActivityIndicator,
   RefreshControl,
-  Platform,
   Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
-import axios from "axios";
 
-/* ----------------- BASE URL HANDLING ----------------- */
-const PC_IP = "192.168.0.101";
-const API_PORT = 8000;
-const SIM_HOST = Platform.OS === "android" ? "10.0.2.2" : "127.0.0.1";
-const USE_PC_LAN = true;
+// ✅ Guna satu sumber API sahaja
+import { api, API_BASE_URL } from "../../src/constants/api";
 
-const ENV_BASE = process.env.EXPO_PUBLIC_API_BASE_URL?.trim();
-const FALLBACK_EMULATOR = `http://${SIM_HOST}:${API_PORT}/api/v1`;
-const FALLBACK_PC_LAN   = `http://${PC_IP}:${API_PORT}/api/v1`;
-const API_BASE_URL = ENV_BASE || (USE_PC_LAN ? FALLBACK_PC_LAN : FALLBACK_EMULATOR);
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 15000,
-});
 
 /* ----------------- TYPES ----------------- */
 type QuizItem = {
@@ -50,9 +36,16 @@ export default function QuizScreen() {
 
   const fetchQuizzes = useCallback(async () => {
     try {
-      const { data } = await api.get<QuizItem[]>("/quizzes");
-      // Ensure safe defaults
-      const normalized = (Array.isArray(data) ? data : []).map(q => ({
+      // Laravel kadang pulangkan {data:[...]} atau terus array
+      const res = await api.get("/quizzes");
+      const payload = res?.data;
+      const list: QuizItem[] = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.data)
+        ? payload.data
+        : [];
+
+      const normalized = list.map((q) => ({
         ...q,
         progress: Math.max(0, Math.min(100, q.progress ?? 0)),
       }));
@@ -78,11 +71,9 @@ export default function QuizScreen() {
   const handleOpenQuiz = (quiz: QuizItem) => {
     const quizId = String(quiz.id);
     const title = quiz.title ?? "Quiz";
-
-    // ✅ Use this if your file is app/quizsession.tsx
+    // Jika file anda ialah app/quizsession.tsx:
     router.push({ pathname: "/quizsession", params: { quizId, title } });
-
-    // 🔁 If your file is dynamic: app/quizsession/[quizId].tsx, use this instead:
+    // Jika dynamic route (app/quizsession/[quizId].tsx), guna:
     // router.push({ pathname: "/quizsession/[quizId]", params: { quizId, title } });
   };
 
@@ -102,6 +93,8 @@ export default function QuizScreen() {
           resizeMode="contain"
         />
         <Text style={styles.headerTitle}>Quran Memory Challenge !!</Text>
+
+        {/* Debug base untuk semak cepat */}
         <Text style={{ color: "#ffffffaa", fontSize: 10, marginTop: 4 }}>
           {API_BASE_URL}
         </Text>

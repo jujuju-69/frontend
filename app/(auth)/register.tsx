@@ -1,4 +1,4 @@
-// app/(auth)/register.tsx — Expo Go + Laravel API + AuthGuard
+// app/(auth)/register.tsx — Expo Go + Laravel API + AuthGuard (single source base URL)
 import React, { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -18,42 +18,34 @@ import {
   View,
 } from "react-native";
 
-// ✅ default import (pastikan hook export default)
+// ✅ guard
 import { useAuthGuard } from "../../src/features/auth/guard/useAuthGuard";
 
-/* =================== CONFIG =================== */
-const API_BASE_URL = "http://192.168.0.101:8000/api/v1"; // tukar ikut server anda
+// ✅ (PERUBAHAN) — Guna satu sumber base URL dari config/network.ts
+// Folder config ada di root projek, jadi dari (auth) path-nya ../../config/network
+import { API_BASE_URL } from "../../config/network";
 
 /* =================== HELPERS ================== */
-// Timeout universal tanpa AbortController
 async function fetchWithTimeout(url: string, options: any = {}, ms = 12000) {
   return Promise.race([
     fetch(url, options),
-    new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("Request timed out")), ms)
-    ),
+    new Promise<never>((_, reject) => setTimeout(() => reject(new Error("Request timed out")), ms)),
   ]);
 }
 async function safeJson(res: Response) {
   const text = await res.text();
-  try {
-    return JSON.parse(text);
-  } catch {
-    return { raw: text };
-  }
+  try { return JSON.parse(text); } catch { return { raw: text }; }
 }
 
 /* =================== UI CONST ================= */
 const GREEN_DARK = "#0a5838";
 const ACCENT = "#ffd34d";
-const HOME_PATH = "/(tabs)";
+const HOME_PATH = "/(tabs)/Homepage";
 
 /* =================== COMPONENT ================ */
 export default function RegisterScreen() {
   const router = useRouter();
-
-  // Jika sudah login (ada token), redirect terus
-  useAuthGuard();
+  useAuthGuard(); // redirect jika sudah login
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -61,19 +53,12 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [hide1, setHide1] = useState(true);
   const [hide2, setHide2] = useState(true);
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
 
   const handleRegister = async () => {
-    if (!name || !email || !password || !confirmPassword) {
-      setError("Please fill in all fields.");
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
+    if (!name || !email || !password || !confirmPassword) return setError("Please fill in all fields.");
+    if (password !== confirmPassword) return setError("Passwords do not match.");
 
     try {
       setLoading(true);
@@ -103,12 +88,8 @@ export default function RegisterScreen() {
       }
 
       const json = await res.json();
-
-      // Terima beberapa bentuk response Laravel
-      const token: string | null =
-        json?.token ?? json?.data?.token ?? json?.access_token ?? null;
+      const token: string | null = json?.token ?? json?.data?.token ?? json?.access_token ?? null;
       const user = json?.user ?? json?.data?.user ?? null;
-
       if (!token) throw new Error("Token not found in response.");
 
       await AsyncStorage.setItem("auth_token", token);
@@ -116,8 +97,8 @@ export default function RegisterScreen() {
 
       router.replace(HOME_PATH);
     } catch (e: any) {
+      console.log("REGISTER_ERROR:", e, "BASE:", API_BASE_URL);
       setError(e?.message || "Unexpected error. Please try again.");
-      console.log("REGISTER_ERROR:", e);
     } finally {
       setLoading(false);
     }
@@ -126,7 +107,6 @@ export default function RegisterScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="light-content" />
-
       <ImageBackground
         source={require("../../assets/images/image_1.png")}
         style={styles.bg}
@@ -138,11 +118,7 @@ export default function RegisterScreen() {
         >
           {/* Header */}
           <View style={styles.headerTop}>
-            <Image
-              source={require("../../assets/images/logo.png")}
-              style={styles.logo}
-              resizeMode="contain"
-            />
+            <Image source={require("../../assets/images/logo.png")} style={styles.logo} resizeMode="contain" />
             <Text style={styles.title}>Create account</Text>
           </View>
 
@@ -195,11 +171,7 @@ export default function RegisterScreen() {
                     secureTextEntry={hide1}
                   />
                   <TouchableOpacity onPress={() => setHide1((v) => !v)}>
-                    <Ionicons
-                      name={hide1 ? "eye-off-outline" : "eye-outline"}
-                      size={18}
-                      color="#89a79a"
-                    />
+                    <Ionicons name={hide1 ? "eye-off-outline" : "eye-outline"} size={18} color="#89a79a" />
                   </TouchableOpacity>
                 </View>
 
@@ -214,11 +186,7 @@ export default function RegisterScreen() {
                     secureTextEntry={hide2}
                   />
                   <TouchableOpacity onPress={() => setHide2((v) => !v)}>
-                    <Ionicons
-                      name={hide2 ? "eye-off-outline" : "eye-outline"}
-                      size={18}
-                      color="#89a79a"
-                    />
+                    <Ionicons name={hide2 ? "eye-off-outline" : "eye-outline"} size={18} color="#89a79a" />
                   </TouchableOpacity>
                 </View>
 
@@ -235,6 +203,7 @@ export default function RegisterScreen() {
                   <Text style={styles.link}>Already have an account? Login</Text>
                 </TouchableOpacity>
 
+                {/* Debug URL */}
                 <Text style={styles.debugUrl}>{API_BASE_URL}</Text>
               </View>
             </View>

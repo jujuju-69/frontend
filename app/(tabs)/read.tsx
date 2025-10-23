@@ -12,38 +12,11 @@ import {
   Image,
   ImageBackground,
   ActivityIndicator,
-  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 
-/* =================== CONFIG (Network) =================== */
-/**
- * Cara pilih BASE:
- * 1) PALING MUDAH — set env (lebih kemas):
- *    app.json / app.config.ts
- *    "expo": { "extra": { "EXPO_PUBLIC_API_BASE_URL": "http://192.168.x.x:8000/api/v1" } }
- * 2) Jika tak set env, guna flag di bawah:
- *    - `USE_PC_LAN = true`  -> telefon sebenar (atau emulator yang mahu guna IP PC)
- *    - `USE_PC_LAN = false` -> emulator/simulator (10.0.2.2 / 127.0.0.1)
- */
-
-const ENV_BASE = process.env.EXPO_PUBLIC_API_BASE_URL;
-
-const API_PORT = 8000;
-// const PC_IP = "10.198.80.138";
-const PC_IP = "192.168.0.101"; // <— tukar ke IP PC anda bila test di telefon
-
-const SIM_HOST = Platform.OS === "android" ? "10.0.2.2" : "127.0.0.1";
-
-// >>> Tukar flag ini ikut situasi anda <<<
-const USE_PC_LAN = true; // true = telefon sebenar | false = emulator/simulator
-
-const FALLBACK_EMULATOR = `http://${SIM_HOST}:${API_PORT}/api/v1`;
-const FALLBACK_PC_LAN = `http://${PC_IP}:${API_PORT}/api/v1`;
-
-const API_BASE_URL =
-  (ENV_BASE && ENV_BASE.trim()) ||
-  (USE_PC_LAN ? FALLBACK_PC_LAN : FALLBACK_EMULATOR);
+// ✅ Satu-satunya sumber base URL
+import { API_BASE_URL } from "../../config/network";
 
 /* ---------------------- TYPES ---------------------- */
 type SurahItem = {
@@ -51,7 +24,7 @@ type SurahItem = {
   number: number;
   latin: string;
   arabic: string;
-  place: "Makkah" | "Madinah"; // ikut DB anda
+  place: "Makkah" | "Madinah";
   ayat: number;
   alias?: string | null;
 };
@@ -60,9 +33,7 @@ type FilterTab = "surat" | "juz" | "halaman";
 
 /* ---------------------- CONSTANTS ---------------------- */
 const OFTEN_READ = ["Al-Kahfi", "Ayat Kursi", "Al-Baqarah"];
-
-// 👉 ruang tambahan khas untuk kad Surah An-Nas supaya tak overlap navbar
-const LAST_CARD_EXTRA_SPACE = 96; // anggaran tinggi navbar + sedikit ruang
+const LAST_CARD_EXTRA_SPACE = 96; // ruang extra bawah utk kad terakhir
 
 /* Util: fetch with timeout + verbose logs */
 async function fetchWithTimeout(
@@ -119,7 +90,7 @@ export default function ReadScreen() {
           throw new Error(`HTTP ${res.status}`);
         }
 
-        // 👇 FIX: sokong {data:[...]} atau terus [...]
+        // sokong {data:[...]} atau terus [...]
         const payload = (await res.json()) as ApiList<SurahItem> | SurahItem[];
         const list: SurahItem[] = Array.isArray(payload)
           ? payload
@@ -261,12 +232,8 @@ export default function ReadScreen() {
                 <>
                   <Text style={{ color: "#666" }}>URL: {debugUrl}</Text>
                   <Text style={{ color: "#666", marginTop: 4 }}>
-                    Tip: Emulator Android gunakan{" "}
-                    <Text style={{ fontWeight: "700" }}>
-                      http://10.0.2.2:{API_PORT}
-                    </Text>
-                    . Telefon sebenar gunakan IP PC:{" "}
-                    <Text style={{ fontWeight: "700" }}>{PC_IP}</Text>.
+                    Tip: Pastikan BASE di atas betul untuk peranti yang digunakan
+                    (emulator/simulator atau telefon sebenar).
                   </Text>
                 </>
               )}
@@ -279,16 +246,14 @@ export default function ReadScreen() {
               contentContainerStyle={{ padding: 14 }}
               renderItem={({ item }) => (
                 <SurahCard
-                  // ✅ hanya Surah An-Nas (114) dapat margin bawah extra
                   extraStyle={
                     item.number === 114 ? { marginBottom: LAST_CARD_EXTRA_SPACE } : undefined
                   }
                   item={item}
                   onPress={() => {
                     console.log("[READ] Tap surah:", item.number, item.latin);
-                    // ✅ Navigate ke skrin bacaan dan pass params
                     router.push({
-                      pathname: "/readingview", // tukar jika route anda lain (cth: "/read/[surahId]")
+                      pathname: "/readingview",
                       params: {
                         surahId: String(item.number),
                         surahName: item.latin,

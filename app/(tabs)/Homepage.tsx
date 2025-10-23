@@ -1,3 +1,5 @@
+// app/(tabs)/Homepage.tsx  (atau app/home/index.tsx ikut routing anda)
+import React from "react";
 import {
   View,
   Text,
@@ -6,18 +8,23 @@ import {
   ScrollView,
   TouchableOpacity,
   ImageBackground,
-  Dimensions,
+  SafeAreaView,
+  StatusBar,
+  useWindowDimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
-const { width } = Dimensions.get("window");
+const GREEN = "#4CAF50";
 
 export default function Home() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.safe}>
+      <StatusBar barStyle="light-content" />
+
       <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
         {/* Header with background image */}
         <ImageBackground
@@ -43,6 +50,7 @@ export default function Home() {
           <Image
             source={require("../../assets/images/fakta.jpg")}
             style={styles.poster}
+            resizeMode="cover"
           />
         </View>
 
@@ -52,7 +60,7 @@ export default function Home() {
             <Ionicons
               name="chatbubble-ellipses-outline"
               size={28}
-              color="#4CAF50"
+              color={GREEN}
             />
             <Text style={styles.aiTitle}>AI SAYS...</Text>
           </View>
@@ -65,8 +73,10 @@ export default function Home() {
         <TouchableOpacity
           style={[styles.button, { marginTop: 30 }]}
           onPress={() => router.push("/memorize")}
+          accessibilityRole="button"
+          accessibilityLabel="Start memorization"
         >
-          <Text style={styles.buttonText}>Let Started</Text>
+          <Text style={styles.buttonText}>Let’s Get Started</Text>
         </TouchableOpacity>
 
         {/* Scrollable Cards (3 items) */}
@@ -80,7 +90,7 @@ export default function Home() {
           contentContainerStyle={{ paddingHorizontal: 16 }}
         >
           {[1, 2, 3].map((i) => (
-            <View key={i} style={styles.hCard}>
+            <View key={i} style={[styles.hCard, { width: width * 0.6 }]}>
               <Image
                 source={{ uri: "https://i.ibb.co/9vYw4pH/quran.png" }}
                 style={styles.hCardImage}
@@ -105,12 +115,12 @@ export default function Home() {
 
         <View style={{ height: 24 }} />
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
+  safe: { flex: 1, backgroundColor: "#fff" },
 
   header: {
     paddingTop: 36,
@@ -148,7 +158,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     padding: 16,
     backgroundColor: "#fff",
-    borderRadius: 20, // <-- radius 20
+    borderRadius: 20, // radius 20
     elevation: 2,
     shadowColor: "#000",
     shadowOpacity: 0.08,
@@ -164,7 +174,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 60,
     paddingVertical: 12,
     borderRadius: 25,
-    backgroundColor: "#4CAF50",
+    backgroundColor: GREEN,
     alignItems: "center",
   },
   buttonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
@@ -176,7 +186,6 @@ const styles = StyleSheet.create({
   sectionHeader: { fontSize: 16, fontWeight: "700", color: "#1c1c1e" },
 
   hCard: {
-    width: width * 0.6,
     marginRight: 12,
     marginTop: 10,
     backgroundColor: "#fff",
