@@ -12,24 +12,13 @@ import {
   ActivityIndicator,
   FlatList,
   RefreshControl,
-  Platform,
   useWindowDimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 
-/* =================== CONFIG (Network) =================== */
-const ENV_BASE = process.env.EXPO_PUBLIC_API_BASE_URL as string | undefined;
-const API_PORT = 8000;
-
-const PC_IP = "192.168.0.101";       // <- tukar bila test di telefon
-const SIM_HOST = Platform.OS === "android" ? "10.0.2.2" : "127.0.0.1";
-const USE_PC_LAN = true;
-
-const FALLBACK_EMULATOR = `http://${SIM_HOST}:${API_PORT}/api/v1`;
-const FALLBACK_PC_LAN = `http://${PC_IP}:${API_PORT}/api/v1`;
-
-const BASE = (ENV_BASE && ENV_BASE.trim()) || (USE_PC_LAN ? FALLBACK_PC_LAN : FALLBACK_EMULATOR);
+// ✅ Satu-satunya sumber BASE dari config/network.ts (relative dari app/)
+import { API_BASE_URL } from "../config/network";
 
 /* =================== UI COLORS =================== */
 const GREEN = "#0e6b45";
@@ -87,7 +76,7 @@ export default function ReadingView() {
         showRefreshing ? setRefreshing(true) : setLoading(true);
         setError(null);
 
-        const res = await fetch(`${BASE}/surahs/${validSurahId}/ayahs`);
+        const res = await fetch(`${API_BASE_URL}/surahs/${validSurahId}/ayahs`);
         if (!res.ok) throw new Error(`Gagal ambil ayat (HTTP ${res.status})`);
 
         const json: AyahResponseNoPaginate = await res.json();

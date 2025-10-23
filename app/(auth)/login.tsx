@@ -18,12 +18,13 @@ import {
   View,
 } from "react-native";
 
-// ✅ NAMED import (pastikan hook export named)
+// ✅ Hook guard sedia ada
 import { useAuthGuard } from "../../src/features/auth/guard/useAuthGuard";
 
-/* =================== CONFIG =================== */
-// Boleh tukar ke env nanti (EXPO_PUBLIC_API_BASE_URL). Buat masa ni guna nilai tetap.
-const API_BASE_URL = "http://192.168.0.101:8000/api/v1";
+// ✅ (PERUBAHAN #1) — Guna 1 sumber base URL sahaja
+// Nota: berdasarkan struktur projek anda, folder `config` berada di root,
+// jadi relative path dari app/(auth) adalah ../../config/network
+import { API_BASE_URL } from "../../config/network";
 
 /* =============== UI CONSTANTS ================= */
 const GREEN_DARK = "#0a5838";
@@ -32,7 +33,7 @@ const ACCENT = "#ffd34d";
 const HOME_PATH = "/(tabs)/Homepage";
 
 /* =============== HELPERS ===================== */
-// Timeout universal tanpa AbortController (kurang isu platform)
+// Timeout universal tanpa AbortController
 async function fetchWithTimeout(url: string, options: any = {}, ms = 12000) {
   return Promise.race([
     fetch(url, options),
@@ -114,7 +115,7 @@ export default function LoginScreen() {
       router.replace(HOME_PATH);
     } catch (e: any) {
       setErrorMsg(e?.message || "Unexpected error. Please try again.");
-      console.log("LOGIN_ERROR:", e);
+      console.log("LOGIN_ERROR:", e, "BASE:", API_BASE_URL);
     } finally {
       setLoading(false);
     }

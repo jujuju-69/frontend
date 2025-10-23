@@ -11,25 +11,12 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
-  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Link, useLocalSearchParams, useRouter } from "expo-router";
-import axios from "axios";
 
-/* ---------------- CONFIG ---------------- */
-const API_PORT = 8000;
-const PC_IP = "192.168.0.101"; // ubah ikut IP PC kamu
-const USE_PC_LAN = true; // jika guna telefon sebenar
-const SIM_HOST = Platform.OS === "android" ? "10.0.2.2" : "127.0.0.1";
-const BASE_URL = USE_PC_LAN
-  ? `http://${PC_IP}:${API_PORT}/api/v1`
-  : `http://${SIM_HOST}:${API_PORT}/api/v1`;
-
-const api = axios.create({
-  baseURL: BASE_URL,
-  timeout: 15000,
-});
+// ✅ Pusat API: satu tempat je ubah (app/constants/api.ts)
+import { api, API_BASE_URL } from "../src/constants/api";
 
 /* ---------------- TYPES ---------------- */
 type Option = { id: number; label?: string; option_text: string };
@@ -37,7 +24,6 @@ type Question = {
   id: number;
   question_text: string;
   options: Option[];
-  // backend TIDAK patut hantar jawapan betul di sini untuk attempt sebenar
 };
 
 const GREEN = "#0e6b45";
@@ -64,16 +50,16 @@ export default function QuizSession() {
     const load = async () => {
       try {
         if (!quizId) throw new Error("quizId missing");
-        // 1️⃣ Start attempt
+
+        // 1) Start attempt
         const { data: attempt } = await api.post(`/quizzes/${quizId}/start`);
         if (!mounted) return;
         setAttemptId(attempt.attempt_id);
 
-        // 2️⃣ Load questions (tanpa dedah jawapan)
+        // 2) Load questions
         const { data: qs } = await api.get(`/quizzes/${quizId}`);
         if (!mounted) return;
 
-        // Normalise field: qs.questions atau qs.quiz_questions atau array terus
         const raw = qs?.questions ?? qs?.quiz_questions ?? qs ?? [];
         const normalized: Question[] = (Array.isArray(raw) ? raw : []).map((it: any, i: number) => ({
           id: Number(it.id),
@@ -88,7 +74,10 @@ export default function QuizSession() {
         setQuestions(normalized);
       } catch (err) {
         console.log(err);
-        Alert.alert("Error", "Gagal memuat kuiz. Pastikan server Laravel berjalan & endpoint betul.");
+        Alert.alert(
+          "Error",
+          `Gagal memuat kuiz. Pastikan server berjalan di ${API_BASE_URL}`
+        );
         router.back();
       } finally {
         if (mounted) setLoading(false);
@@ -110,16 +99,14 @@ export default function QuizSession() {
     if (attemptId == null || picked == null || !q) return;
 
     try {
-      // Hantar jawapan ke backend
+      // Hantar jawapan
       const { data } = await api.post(`/attempts/${attemptId}/submit`, {
         question_id: q.id,
         selected_option_id: picked,
       });
 
-      // Jika backend pulangkan is_correct, gunakan itu
-      const isCorrect = typeof data?.is_correct === "boolean"
-        ? data.is_correct
-        : undefined;
+      const isCorrect =
+        typeof data?.is_correct === "boolean" ? data.is_correct : undefined;
 
       setScore((s) => s + (isCorrect ? 1 : 0));
 
@@ -129,8 +116,6 @@ export default function QuizSession() {
         setPicked(null);
       } else {
         setFinished(true);
-        // Opsyenal: fetch keputusan penuh
-        // await api.get(`/attempts/${attemptId}`);
       }
     } catch (e) {
       console.log(e);
@@ -230,7 +215,10 @@ export default function QuizSession() {
                   activeOpacity={0.9}
                 >
                   <Text
-                    style={[styles.optText, picked === opt.id && styles.optTextActive]}
+                    style={[
+                      styles.optText,
+                      picked === opt.id && styles.optTextActive,
+                    ]}
                   >
                     {(opt.label ?? "").trim() ? `${opt.label}. ` : ""}
                     {opt.option_text}
@@ -241,7 +229,10 @@ export default function QuizSession() {
 
             <View style={styles.actionsRow}>
               <TouchableOpacity
-                style={[styles.primaryBtn, { opacity: picked == null ? 0.5 : 1 }]}
+                style={[
+                  styles.primaryBtn,
+                  { opacity: picked == null ? 0.5 : 1 },
+                ]}
                 disabled={picked == null}
                 onPress={onSubmit}
               >
@@ -294,7 +285,10 @@ function FinishCard({
         </Text>
 
         <View style={{ flexDirection: "row", gap: 10, marginTop: 8 }}>
-          <TouchableOpacity style={[styles.primaryBtn, { flex: 1 }]} onPress={onRestart}>
+          <TouchableOpacity
+            style={[styles.primaryBtn, { flex: 1 }]}
+            onPress={onRestart}
+          >
             <Text style={styles.primaryText}>Ulang</Text>
           </TouchableOpacity>
           <TouchableOpacity

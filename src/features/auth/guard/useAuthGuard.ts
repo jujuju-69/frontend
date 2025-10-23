@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getToken } from '../../../storage/storage';
+import { getToken } from '../../../../storage/storage';
 
 export function useAuthGuard() {
   const [loading, setLoading] = useState(true);

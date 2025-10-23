@@ -1,8 +1,8 @@
 // app/auth/service.ts
-import { clearToken, saveToken } from '../../storage/storage';
+import { clearToken, saveToken } from '../../../storage/storage';
 // Update the import path below to the correct location of your api module.
 // For example, if api.ts is in src/lib/api.ts, use:
-import { api } from '../../lib/api';
+import { api } from '../../constants/api';
 
 export type AuthUser = { id:number; name:string; email:string };
 
